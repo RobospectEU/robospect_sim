@@ -1,0 +1,5 @@
+robospect_robot_control:
+
+     model: robospect
+
+     publish_odom_tf: true

@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!-- start gazebo simulation -->
+  <include file="$(find robospect_gazebo)/launch/robospect.launch"/>
+
+  <!-- start robot_control node -->
+  <include file="$(find robospect_robot_control)/launch/robospect_robot_control.launch"/>
+
+  <!-- start joystick -->
+  <include file="$(find robospect_pad)/launch/robospect_pad.launch"/>
+
+</launch>

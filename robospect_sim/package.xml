@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<package>
+  <name>robospect_sim</name>
+  <version>1.0.0</version>
+  <description>The robospect_sim package. It contains ROBOSCPECT simulation packages</description>
+
+  <maintainer email="info@robotnik.es">Robotnik</maintainer>
+
+  <license>BSD</license>
+
+  <url type="website">http://wiki.ros.org/robospect_sim</url>
+
+  <author email="dcarbonell@robotnik.es">Dani Carbonell</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <run_depend>robospect_gazebo</run_depend>
+
+  <export><metapackage/></export>
+
+</package>
