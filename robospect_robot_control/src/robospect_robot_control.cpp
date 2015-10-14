@@ -217,11 +217,11 @@ RobospectControllerClass(ros::NodeHandle h) : diagnostic_(),
   private_node_handle_.param<std::string>("joint_back_right_wheel", joint_back_right_wheel, "right_rear_axle");
 
   // Ackermann configuration - direction - topics
-  private_node_handle_.param<std::string>("frw_pos_topic", frw_pos_topic_, "/robospect/right_steering_joint_controller/command");
-  private_node_handle_.param<std::string>("flw_pos_topic", flw_pos_topic_, "/robospect/left_steering_joint_controller/command");
+  private_node_handle_.param<std::string>("frw_pos_topic", frw_pos_topic_, "/robospect/right_rear_steering_joint_controller/command");
+  private_node_handle_.param<std::string>("flw_pos_topic", flw_pos_topic_, "/robospect/left_rear_steering_joint_controller/command");
 
-  private_node_handle_.param<std::string>("joint_front_right_steer", joint_front_right_steer, "right_steering_joint");
-  private_node_handle_.param<std::string>("joint_front_left_steer", joint_front_left_steer, "left_steering_joint");
+  private_node_handle_.param<std::string>("joint_front_right_steer", joint_front_right_steer, "right_rear_steering_joint");
+  private_node_handle_.param<std::string>("joint_front_left_steer", joint_front_left_steer, "left_rear_steering_joint");
 
   // Robot parameters
   if (!private_node_handle_.getParam("robospect_d_wheels", robospect_d_wheels_))
@@ -523,7 +523,8 @@ void setCommand(const ackermann_msgs::AckermannDriveStamped &msg)
 	double speed_limit = 10.0;  // m/s
 	double angle_limit = PI/4.0;   // there should be also urdf limits
     v_ref_ = saturation(msg.drive.speed, -speed_limit, speed_limit);
-    alfa_ref_ = saturation(msg.drive.steering_angle, -angle_limit, angle_limit);
+    // As the steering wheels are in back, inverts the angle
+    alfa_ref_ = -1 * saturation(msg.drive.steering_angle, -angle_limit, angle_limit);
 }
 
 // Service SetOdometry

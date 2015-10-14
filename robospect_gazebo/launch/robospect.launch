@@ -5,8 +5,7 @@
   <arg name="debug" default="false"/>
   <arg name="gui" default="true"/>
 
-  <!-- robospect_control launch file -->
-  <include file="$(find robospect_control)/launch/robospect_control.launch" />
+  
 
   <!-- include file="$(find robospect_robot_control)/launch/robospect_robot_control.launch"/ -->
 
@@ -36,5 +35,8 @@
   <!-- Call a python script to the run a service call to gazebo_ros to spawn a URDF robot -->
   <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
         args="-urdf -model robospect -param robot_description -z 1"/>
+
+  <!-- robospect_control launch file -->
+  <include file="$(find robospect_control)/launch/robospect_control.launch" />
 
 </launch>
