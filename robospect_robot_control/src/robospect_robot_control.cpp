@@ -211,10 +211,10 @@ RobospectControllerClass(ros::NodeHandle h) : diagnostic_(),
   private_node_handle_.param<std::string>("brw_vel_topic", brw_vel_topic_, "/robospect/right_rear_axle_controller/command");
 
   // Ackermann configuration - traction - joint names
-  private_node_handle_.param<std::string>("joint_front_right_wheel", joint_front_right_wheel, "right_front_axle");
-  private_node_handle_.param<std::string>("joint_front_left_wheel", joint_front_left_wheel, "left_front_axle");
-  private_node_handle_.param<std::string>("joint_back_left_wheel", joint_back_left_wheel, "left_rear_axle");
-  private_node_handle_.param<std::string>("joint_back_right_wheel", joint_back_right_wheel, "right_rear_axle");
+  private_node_handle_.param<std::string>("joint_front_right_wheel", joint_front_right_wheel, "right_front_axle_joint");
+  private_node_handle_.param<std::string>("joint_front_left_wheel", joint_front_left_wheel, "left_front_axle_joint");
+  private_node_handle_.param<std::string>("joint_back_left_wheel", joint_back_left_wheel, "left_rear_axle_joint");
+  private_node_handle_.param<std::string>("joint_back_right_wheel", joint_back_right_wheel, "right_rear_axle_joint");
 
   // Ackermann configuration - direction - topics
   private_node_handle_.param<std::string>("frw_pos_topic", frw_pos_topic_, "/robospect/right_rear_steering_joint_controller/command");
@@ -352,16 +352,32 @@ void UpdateControl()
 
    // Linear speed ref publish (could be improved by setting correct speed to each wheel according to turning state
    // w = v_mps / (PI * D);   w_rad = w * 2.0 * PI
+   /*
    double ref_speed_joint = 2.0 * v_ref_ / ROBOSPECT_WHEEL_DIAMETER;
-
+*/
    std_msgs::Float64 frw_ref_vel_msg;
    std_msgs::Float64 flw_ref_vel_msg;
    std_msgs::Float64 brw_ref_vel_msg;
    std_msgs::Float64 blw_ref_vel_msg;
-   frw_ref_vel_msg.data = -ref_speed_joint;
+   /*frw_ref_vel_msg.data = -ref_speed_joint;
    flw_ref_vel_msg.data = -ref_speed_joint;
    brw_ref_vel_msg.data = -ref_speed_joint;
    blw_ref_vel_msg.data = -ref_speed_joint;
+   */
+   // Method by using Position controllers 
+   double ref_speed_joint = -(1.0/desired_freq_)*2.0*v_ref_/(robospect_wheel_diameter_);
+   double joint_fr_vel = joint_state_.position[frw_vel_];
+   double joint_fl_vel = joint_state_.position[flw_vel_];
+   double joint_br_vel = joint_state_.position[brw_vel_];
+   double joint_bl_vel = joint_state_.position[blw_vel_];
+	
+   frw_ref_vel_msg.data = joint_fr_vel + ref_speed_joint;
+   flw_ref_vel_msg.data = joint_fl_vel + ref_speed_joint;
+   brw_ref_vel_msg.data = joint_br_vel + ref_speed_joint;
+   blw_ref_vel_msg.data = joint_bl_vel + ref_speed_joint;
+   	
+   //ROS_INFO("FRVEL_pos = %lf (%d), FLVEL_pos = %lf (%d)", joint_fr_vel, frw_vel_, joint_fl_vel, flw_vel_);
+   //ROS_INFO("FRVEL_ref = %lf,      FLVEL_ref = %lf",  frw_ref_vel_msg.data,  flw_ref_vel_msg.data);
 
    // Publish msgs traction and direction
    ref_vel_frw_.publish( frw_ref_vel_msg );
@@ -375,8 +391,12 @@ void UpdateControl()
 // Update robot odometry depending on kinematic configuration
 void UpdateOdometry()
 {
+	static bool first_time = true;
+	static double last_frw_pos = 0.0, last_flw_pos = 0.0;
 	// Get angles
     double a1, a2;
+    double fSamplePeriod = 1.0 / desired_freq_;  // Default sample period
+    
     //ROS_INFO("UpdateOdometry 1: frw_pos_:%d flw_pos_:%d blw_pos_:%d brw_pos_:%d", frw_pos_, flw_pos_, blw_pos_, brw_pos_);
     //ROS_INFO("UpdateOdometry 1: frw_pos_:%5.2f flw_pos_:%5.2f",
 	//		joint_state_.position[frw_pos_], joint_state_.position[flw_pos_])
@@ -385,14 +405,35 @@ void UpdateOdometry()
 
     // Linear speed of each wheel [mps]
 	double v3, v4;
-	v3 = joint_state_.velocity[blw_vel_] * (robospect_wheel_diameter_ / 2.0);
-	v4 = joint_state_.velocity[brw_vel_] * (robospect_wheel_diameter_ / 2.0);
+	double current_frw_pos = 0.0, current_flw_pos = 0.0;
+	
+	if(first_time){
+		v3 = 0.0;
+		v4 = 0.0;
+		first_time = false;
+	}else{
+		current_frw_pos = joint_state_.position[frw_vel_];
+		current_flw_pos = joint_state_.position[flw_vel_];
+		
+		double inc_frw = current_frw_pos - last_frw_pos;
+		double inc_flw = current_flw_pos - last_flw_pos;
+		v3 = inc_flw / fSamplePeriod;
+		v4 = inc_frw / fSamplePeriod;
+		
+	}
+	
+	last_frw_pos = joint_state_.position[frw_vel_];
+	last_flw_pos = joint_state_.position[flw_vel_];
+	
+	//v3 = joint_state_.velocity[blw_vel_] * (robospect_wheel_diameter_ / 2.0);
+	//v4 = joint_state_.velocity[brw_vel_] * (robospect_wheel_diameter_ / 2.0);
+	
 
     // Turning angle front
     double fBetaRads = (a1 + a2) / 2.0;
 
 	// Linear speed
-    double fSamplePeriod = 1.0 / desired_freq_;  // Default sample period
+    
     double v_mps = -(v3 + v4) / 2.0;
 
     // Compute orientation just integrating imu gyro (not so reliable with the simulated imu)

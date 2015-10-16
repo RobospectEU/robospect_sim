@@ -6,6 +6,8 @@
     output="screen" ns="/robospect" args="--namespace=/robospect
 					  left_front_axle_controller
 					  right_front_axle_controller
+					  left_rear_axle_controller
+					  right_rear_axle_controller
 					  right_rear_steering_joint_controller
 					  left_rear_steering_joint_controller
 					  crane_first_joint_controller
