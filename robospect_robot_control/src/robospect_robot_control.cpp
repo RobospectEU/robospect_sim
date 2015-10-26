@@ -59,6 +59,7 @@
 #define ROBOSPECT_MAX_COMMAND_REC_FREQ   150.0
 
 #define ROBOSPECT_D_WHEELS_M            1.65    // distance from front to back axis, car-like kinematics
+#define ROBOSPECT_D_TRACTION_WHEELS_M   0.503    // distance from traction wheels centers
 #define ROBOSPECT_WHEEL_DIAMETER	    0.470   // wheel avg diameter - may need calibration according to tyre pressure
 
 using namespace std;
@@ -86,6 +87,7 @@ public:
   ros::Publisher ref_vel_frw_;
   ros::Publisher ref_vel_blw_;
   ros::Publisher ref_vel_brw_;
+  ros::Publisher ref_pos_fcw_;
   ros::Publisher ref_pos_flw_;
   ros::Publisher ref_pos_frw_;
 
@@ -109,6 +111,7 @@ public:
   // Ackerman Topics - control action - steering - position
   std::string frw_pos_topic_;
   std::string flw_pos_topic_;
+  std::string fcw_pos_topic_;
 
   // Joint names - traction - velocity
   std::string joint_front_right_wheel;
@@ -117,8 +120,9 @@ public:
   std::string joint_back_right_wheel;
 
   // Joint names - steering - position
-  std::string joint_front_right_steer;
-  std::string joint_front_left_steer;
+  std::string joint_back_right_steer;
+  std::string joint_back_left_steer;
+  std::string joint_back_center_steer;
 
   // Indexes to joint_states
   int frw_vel_, flw_vel_, blw_vel_, brw_vel_;
@@ -176,9 +180,13 @@ public:
 
   // Publisher for odom topic
   ros::Publisher odom_pub_;
+  ros::Publisher joint_state_pub_;
 
   // Broadcaster for odom tf
   tf::TransformBroadcaster odom_broadcaster;
+  
+  // 
+  sensor_msgs::JointState joints;
 
 
 /*!	\fn RobospectControllerClass::RobospectControllerClass()
@@ -215,14 +223,17 @@ RobospectControllerClass(ros::NodeHandle h) : diagnostic_(),
   private_node_handle_.param<std::string>("joint_front_left_wheel", joint_front_left_wheel, "left_front_axle_joint");
   private_node_handle_.param<std::string>("joint_back_left_wheel", joint_back_left_wheel, "left_rear_axle_joint");
   private_node_handle_.param<std::string>("joint_back_right_wheel", joint_back_right_wheel, "right_rear_axle_joint");
+  private_node_handle_.param<std::string>("joint_back_right_steer", joint_back_right_steer, "right_rear_steering_joint");
+  private_node_handle_.param<std::string>("joint_back_left_steer", joint_back_left_steer, "left_rear_steering_joint");
+  private_node_handle_.param<std::string>("joint_back_center_steer", joint_back_center_steer, "center_rear_steering_joint");
+
 
   // Ackermann configuration - direction - topics
   private_node_handle_.param<std::string>("frw_pos_topic", frw_pos_topic_, "/robospect/right_rear_steering_joint_controller/command");
   private_node_handle_.param<std::string>("flw_pos_topic", flw_pos_topic_, "/robospect/left_rear_steering_joint_controller/command");
+  private_node_handle_.param<std::string>("fcw_pos_topic", fcw_pos_topic_, "/robospect/central_rear_steering_joint_controller/command");
 
-  private_node_handle_.param<std::string>("joint_front_right_steer", joint_front_right_steer, "right_rear_steering_joint");
-  private_node_handle_.param<std::string>("joint_front_left_steer", joint_front_left_steer, "left_rear_steering_joint");
-
+ 
   // Robot parameters
   if (!private_node_handle_.getParam("robospect_d_wheels", robospect_d_wheels_))
         robospect_d_wheels_ = ROBOSPECT_D_WHEELS_M;
@@ -258,7 +269,7 @@ RobospectControllerClass(ros::NodeHandle h) : diagnostic_(),
   orientation_x_ = 0.0; orientation_y_ = 0.0; orientation_z_ = 0.0; orientation_w_ = 0.0;
 
   // Advertise controller services
-  srv_SetOdometry_ = robospect_robot_control_node_handle.advertiseService("set_odometry",  &RobospectControllerClass::srvCallback_SetOdometry, this);
+  srv_SetOdometry_ = private_node_handle_.advertiseService("set_odometry",  &RobospectControllerClass::srvCallback_SetOdometry, this);
 
   // Subscribe to joint states topic
   joint_state_sub_ = robospect_robot_control_node_handle.subscribe<sensor_msgs::JointState>("/robospect/joint_states", 1, &RobospectControllerClass::jointStateCallback, this);
@@ -273,12 +284,14 @@ RobospectControllerClass(ros::NodeHandle h) : diagnostic_(),
   ref_vel_brw_ = robospect_robot_control_node_handle.advertise<std_msgs::Float64>( brw_vel_topic_, 50);
   ref_pos_frw_ = robospect_robot_control_node_handle.advertise<std_msgs::Float64>( frw_pos_topic_, 50);
   ref_pos_flw_ = robospect_robot_control_node_handle.advertise<std_msgs::Float64>( flw_pos_topic_, 50);
+  ref_pos_fcw_ = robospect_robot_control_node_handle.advertise<std_msgs::Float64>( fcw_pos_topic_, 50);
 
   // Subscribe to command topic
-  cmd_sub_ = robospect_robot_control_node_handle.subscribe<ackermann_msgs::AckermannDriveStamped>("command", 1, &RobospectControllerClass::commandCallback, this);
+  cmd_sub_ = private_node_handle_.subscribe<ackermann_msgs::AckermannDriveStamped>("ackermann_cmd", 1, &RobospectControllerClass::commandCallback, this);
 
   // Publish odometry
-  odom_pub_ = robospect_robot_control_node_handle.advertise<nav_msgs::Odometry>("/robospect_robot_control/odom", 1000);
+  odom_pub_ = private_node_handle_.advertise<nav_msgs::Odometry>("odom", 10);
+  joint_state_pub_ = robospect_robot_control_node_handle.advertise<sensor_msgs::JointState>("/robospect/joint_states", 10);
 
   // Component frequency diagnostics
   diagnostic_.setHardwareID("robospect_robot_control - simulation");
@@ -296,6 +309,13 @@ RobospectControllerClass(ros::NodeHandle h) : diagnostic_(),
 
   // Flag to indicate joint_state has been read
   read_state_ = false;
+  
+  // Inits joints state
+  
+	/*joints.name.push_back(j);
+	joints.position.push_back(0.0);
+	joints.velocity.push_back(0.0);
+	joints.effort.push_back(0.0);*/
 }
 
 /// Controller startup in realtime
@@ -310,8 +330,8 @@ int starting()
     flw_vel_ = find (joint_names.begin(),joint_names.end(), string(joint_front_left_wheel)) - joint_names.begin();
     blw_vel_ = find (joint_names.begin(),joint_names.end(), string(joint_back_left_wheel)) - joint_names.begin();
     brw_vel_ = find (joint_names.begin(),joint_names.end(), string(joint_back_right_wheel)) - joint_names.begin();
-    frw_pos_ = find (joint_names.begin(),joint_names.end(), string(joint_front_right_steer)) - joint_names.begin();
-    flw_pos_ = find (joint_names.begin(),joint_names.end(), string(joint_front_left_steer)) - joint_names.begin();
+    frw_pos_ = find (joint_names.begin(),joint_names.end(), string(joint_back_right_steer)) - joint_names.begin();
+    flw_pos_ = find (joint_names.begin(),joint_names.end(), string(joint_back_left_steer)) - joint_names.begin();
     return 0;
 	}
   else return -1;
@@ -327,14 +347,33 @@ void UpdateControl()
   double d = ROBOSPECT_D_WHEELS_M; // divide by 2 for dual Ackermann steering
   double alfa_ref_left = 0.0;
   double alfa_ref_right = 0.0;
+  double alfa_inner = 0.0;
+  double alfa_outer = 0.0;
+  double l = d;
+  double b = ROBOSPECT_D_TRACTION_WHEELS_M;
   if (alfa_ref_!=0.0) {  // div/0
-     d1 =  d / tan (alfa_ref_);
+     /*d1 =  d / tan (alfa_ref_);
      alfa_ref_left = atan2( d, d1 - 0.105);
      alfa_ref_right = atan2( d, d1 + 0.105);
      if (alfa_ref_<0.0) {
 		alfa_ref_left = alfa_ref_left - PI;
 		alfa_ref_right = alfa_ref_right - PI;
+		}*/
+		double cot_alfa_ref = 1.0/tan(fabs(alfa_ref_));
+		alfa_inner = atan( 1.0/ ( cot_alfa_ref - b/l ) );
+		alfa_outer = atan( 1.0/ ( cot_alfa_ref + b/l ) );
+		//alfa_inner = 1.0/atan( cot_alfa_ref - b/l );
+		//alfa_outer = 1.0/atan( cot_alfa_ref + b/l );
+		if(alfa_ref_ > 0.0){
+			alfa_ref_left = alfa_outer;
+			alfa_ref_right = alfa_inner;
+			ROS_INFO("alpha = %lf, inner (right) = %lf, outer (left) = %lf", -alfa_ref_, alfa_inner, alfa_outer );
+		}else{
+			alfa_ref_left = -alfa_inner;
+			alfa_ref_right = -alfa_outer;
+			ROS_INFO("alpha = %lf, inner (left) = %lf, outer (right) = %lf", -alfa_ref_, alfa_inner, alfa_outer );
 		}
+		
      }
   else {
      alfa_ref_left = 0.0;
@@ -346,9 +385,11 @@ void UpdateControl()
    std_msgs::Float64 flw_ref_pos_msg;
    std_msgs::Float64 brw_ref_pos_msg;
    std_msgs::Float64 blw_ref_pos_msg;
+   std_msgs::Float64 bcw_ref_pos_msg;
 
    flw_ref_pos_msg.data = alfa_ref_left;
    frw_ref_pos_msg.data = alfa_ref_right;
+   bcw_ref_pos_msg.data = alfa_ref_;
 
    // Linear speed ref publish (could be improved by setting correct speed to each wheel according to turning state
    // w = v_mps / (PI * D);   w_rad = w * 2.0 * PI
@@ -359,6 +400,7 @@ void UpdateControl()
    std_msgs::Float64 flw_ref_vel_msg;
    std_msgs::Float64 brw_ref_vel_msg;
    std_msgs::Float64 blw_ref_vel_msg;
+   
    /*frw_ref_vel_msg.data = -ref_speed_joint;
    flw_ref_vel_msg.data = -ref_speed_joint;
    brw_ref_vel_msg.data = -ref_speed_joint;
@@ -386,6 +428,19 @@ void UpdateControl()
    ref_vel_brw_.publish( brw_ref_vel_msg );
    ref_pos_frw_.publish( frw_ref_pos_msg );
    ref_pos_flw_.publish( flw_ref_pos_msg );
+   //ref_pos_fcw_.publish( bcw_ref_pos_msg );
+   
+   
+   // Publish joint state of center steering joint
+   sensor_msgs::JointState joints;
+   joints.name.push_back("center_rear_steering_joint");
+   joints.position.push_back(alfa_ref_);
+   joints.velocity.push_back(0.0);
+   joints.effort.push_back(0.0);
+   joints.header.stamp = ros::Time::now();
+   joint_state_pub_.publish(joints);
+   
+   
 }
 
 // Update robot odometry depending on kinematic configuration
@@ -533,6 +588,12 @@ void PublishOdometry()
 void stopping()
 {}
 
+/*void publishJointStates(){
+	
+	
+	joints.header.stamp = t_now;
+	joint_state_pub_.publish(joints);
+}*/
 
 /*
  *	\brief Checks that the robot is receiving at a correct frequency the command messages. Diagnostics

@@ -1,10 +1,11 @@
 <?xml version="1.0"?>
 <launch>
 
-  <rosparam command="load" file="$(find robospect_robot_control)/config/robospect.yaml" />
+  
 
-  <node name="robospect_robot_control" pkg="robospect_robot_control" type="robospect_robot_control_node" output="screen">
-     <remap from="/robospect_robot_control/command" to="/robospect_controller/command"/>
+  <node name="robospect_platform_controller" pkg="robospect_robot_control" type="robospect_robot_control_node" output="screen">
+	  <rosparam command="load" file="$(find robospect_robot_control)/config/robospect.yaml" />
+     <!--remap from="/robospect_robot_control/command" to="/robospect_controller/command"/-->
   </node>
   
 </launch>
