@@ -6,7 +6,7 @@ target_frame: "/base_footprint"
 command_type: "Ackermann"
 d_lookahead_min: 3.0
 d_lookahead_max: 3.5
-d_dist_wheel_to_center: 0.3
-desired_distance: 1.0
-max_speed: 1.2
+d_dist_wheel_to_center: 0.825
+desired_distance: 2.0
+max_speed: 1.0
 kr: 0.80 # default 0.20
