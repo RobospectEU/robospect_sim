@@ -1,8 +1,4 @@
-<!--
-DESCRITPION
--->
-
-
+<?xml version="1.0"?>
 <launch>
         <node pkg="ira_laser_tools" name="laserscan_multi_merger" type="laserscan_multi_merger" output="screen">
 		<param name="destination_frame" value="/sick_front_laser_link"/>

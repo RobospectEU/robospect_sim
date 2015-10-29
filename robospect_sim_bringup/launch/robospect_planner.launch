@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!-- Convert laser scan to 3D point cloud into fixed frame not rotating along with sensor.
+       Also performs scan shadow point filtering -->
+  <node pkg="hector_laserscan_to_pointcloud" type="laserscan_to_pointcloud_node" name="scan_to_ptcld" respawn="true">
+    <!--remap from="/scan" to="/hokuyo_base/scan"/--> 
+    <param name="min_range" value="0.05" />
+    <param name="use_high_fidelity_projection" value="true" />
+    <param name="target_frame" value="base_footprint" />
+    <!-- The scan shadow filter removes laser readings that are most likely caused by the veiling effect 
+	 when the edge of an object is being scanned -->
+    <rosparam command="load" file="$(find hector_laserscan_to_pointcloud)/config/default_scan_shadow_filter.yaml" />
+  </node>
+
+  <node pkg="robospect_planner" type="robospect_planner_node" name="robospect_planner" output="screen">
+    <rosparam command="load" file="$(find robospect_sim_bringup)/config/tunnel_planner.yaml"/>
+    <rosparam command="load" file="$(find robospect_sim_bringup)/config/tunnel_map.yaml"/>
+  </node>
+
+  <node pkg="robospect_planner" type="path_marker.py" name="path_marker" output="screen">
+	<param name="frame_id" value="/map" type="string"/>
+        <param name="planner" value="robospect_planner" type="string"/>
+  </node>
+
+  <!-- Rviz --> 
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find robospect_sim_bringup)/config/config_planner.rviz"/> 
+
+</launch>

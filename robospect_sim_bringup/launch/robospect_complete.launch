@@ -5,7 +5,10 @@
   <include file="$(find robospect_gazebo)/launch/robospect.launch"/>
 
   <!-- start robot_control node -->
-  <!--include file="$(find robospect_robot_control)/launch/robospect_robot_control.launch"/-->
+  <include file="$(find robospect_robot_control)/launch/robospect_robot_control.launch"/>
+  
+  <!-- start robot_control node -->
+  <!--include file="$(find robospect_sim_bringup)/launch/laserscan_multi_merger.launch"/-->
 
   <!-- start joystick -->
   <include file="$(find robospect_pad)/launch/robospect_pad.launch"/>
