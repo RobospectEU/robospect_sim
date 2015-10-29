@@ -352,26 +352,19 @@ void UpdateControl()
   double l = d;
   double b = ROBOSPECT_D_TRACTION_WHEELS_M;
   if (alfa_ref_!=0.0) {  // div/0
-     /*d1 =  d / tan (alfa_ref_);
-     alfa_ref_left = atan2( d, d1 - 0.105);
-     alfa_ref_right = atan2( d, d1 + 0.105);
-     if (alfa_ref_<0.0) {
-		alfa_ref_left = alfa_ref_left - PI;
-		alfa_ref_right = alfa_ref_right - PI;
-		}*/
+    
 		double cot_alfa_ref = 1.0/tan(fabs(alfa_ref_));
 		alfa_inner = atan( 1.0/ ( cot_alfa_ref - b/l ) );
 		alfa_outer = atan( 1.0/ ( cot_alfa_ref + b/l ) );
-		//alfa_inner = 1.0/atan( cot_alfa_ref - b/l );
-		//alfa_outer = 1.0/atan( cot_alfa_ref + b/l );
+
 		if(alfa_ref_ > 0.0){
 			alfa_ref_left = alfa_outer;
 			alfa_ref_right = alfa_inner;
-			ROS_INFO("alpha = %lf, inner (right) = %lf, outer (left) = %lf", -alfa_ref_, alfa_inner, alfa_outer );
+			//ROS_INFO("alpha = %lf, inner (right) = %lf, outer (left) = %lf", -alfa_ref_, alfa_inner, alfa_outer );
 		}else{
 			alfa_ref_left = -alfa_inner;
 			alfa_ref_right = -alfa_outer;
-			ROS_INFO("alpha = %lf, inner (left) = %lf, outer (right) = %lf", -alfa_ref_, alfa_inner, alfa_outer );
+			//ROS_INFO("alpha = %lf, inner (left) = %lf, outer (right) = %lf", -alfa_ref_, alfa_inner, alfa_outer );
 		}
 		
      }
