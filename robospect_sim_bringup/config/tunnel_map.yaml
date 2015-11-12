@@ -1,12 +1,12 @@
 tunnel_map:
-  footprint_width: 0.60
-  footprint_length: 0.70
+  footprint_width: 1.3
+  footprint_length: 2.2
   crane_length: 3.0
-  lateral_clearance: 0.20
+  lateral_clearance: 0.2
   obstacle_range: 0.4
   lookahead_distance: 2.0
   max_y_dist: 4.0
   preferred_wall_side: "LEFT"
-  ransac_threshold: 0.05 
+  ransac_threshold: 0.01 
   publish_wall_dist: "true"
   pcl_topic: "/scan_cloud"

@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<launch>
+  <node pkg="laser_filters" type="scan_to_scan_filter_chain"
+      name="front_laser_filter_bounds">
+    <rosparam command="load" file="$(find robospect_sim_bringup)/config/laser_filter_bounds.yaml" />
+    <remap from="scan" to="/sick_front/scan" />
+    <remap from="scan_filtered" to="/sick_front/scan_filtered" />
+  </node>
+  <node pkg="laser_filters" type="scan_to_scan_filter_chain"
+      name="rear_laser_filter_bounds">
+    <rosparam command="load" file="$(find robospect_sim_bringup)/config/laser_filter_bounds.yaml" />
+    <remap from="scan" to="/sick_rear/scan" />
+    <remap from="scan_filtered" to="/sick_rear/scan_filtered" />
+  </node>
+</launch>
