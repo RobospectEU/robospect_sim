@@ -3,6 +3,6 @@
 
   <!--  -->
   <node pkg="rostful" type="server" name="robospect_rostful_server" output="screen"
-	args="--topics /robospect_platform_controller/odom"/>
+	args="--topics /robospect_platform_controller/odom /mission_state"/>
 
 </launch>
