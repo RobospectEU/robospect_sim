@@ -1,8 +1,10 @@
 <?xml version="1.0"?>
 <launch>
-
+  <arg name="gui" default="false"/>
   <!-- start gazebo simulation -->
-  <include file="$(find robospect_gazebo)/launch/robospect.launch"/>
+  <include file="$(find robospect_gazebo)/launch/robospect.launch">
+  	<arg name="gui" value="$(arg gui)" />
+  </include>
 
   <!-- start robot_control node -->
   <include file="$(find robospect_robot_control)/launch/robospect_robot_control.launch"/>
