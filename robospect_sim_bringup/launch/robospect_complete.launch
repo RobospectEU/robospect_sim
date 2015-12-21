@@ -7,6 +7,9 @@
   <!-- start robot_control node -->
   <include file="$(find robospect_robot_control)/launch/robospect_robot_control.launch"/>
   
+  <!-- Filters laser range -->
+  <include file="$(find robospect_sim_bringup)/launch/laser_filters.launch"/>
+  
   <!-- start robot_control node -->
   <!--include file="$(find robospect_sim_bringup)/launch/laserscan_multi_merger.launch"/-->
 

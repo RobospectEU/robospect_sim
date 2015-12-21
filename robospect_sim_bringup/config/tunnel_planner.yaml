@@ -4,9 +4,9 @@ position_source: "MAP"
 desired_freq: 50.0
 target_frame: "/base_footprint"
 command_type: "Ackermann"
-d_lookahead_min: 3.0
-d_lookahead_max: 3.5
+d_lookahead_min: 2.0
+d_lookahead_max: 2.5
 d_dist_wheel_to_center: 0.825
-desired_distance: 2.0
+desired_distance: 1.5
 max_speed: 1.0
 kr: 0.80 # default 0.20

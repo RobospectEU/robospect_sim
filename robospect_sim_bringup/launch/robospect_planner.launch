@@ -4,7 +4,7 @@
   <!-- Convert laser scan to 3D point cloud into fixed frame not rotating along with sensor.
        Also performs scan shadow point filtering -->
   <node pkg="hector_laserscan_to_pointcloud" type="laserscan_to_pointcloud_node" name="scan_to_ptcld" respawn="true">
-    <!--remap from="/scan" to="/hokuyo_base/scan"/--> 
+    <remap from="/scan" to="/sick_front/scan_filtered"/> 
     <param name="min_range" value="0.05" />
     <param name="use_high_fidelity_projection" value="true" />
     <param name="target_frame" value="base_footprint" />
